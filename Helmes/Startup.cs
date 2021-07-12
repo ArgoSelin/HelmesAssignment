@@ -1,10 +1,14 @@
 using Helmes.Api.Extensions;
+using Helmes.Domain.Interfaces;
+using Helmes.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using System;
 
 namespace Helmes
 {
@@ -21,9 +25,11 @@ namespace Helmes
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services
-                .AddDatabase()
-                .AddServices();
+            services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("Helmes.Api")));
+            services.AddScoped<Func<DatabaseContext>>((provider) => () => provider.GetService<DatabaseContext>());
+            services.AddScoped<DbFactory>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddServices();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
